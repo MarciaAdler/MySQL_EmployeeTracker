@@ -141,10 +141,10 @@ function updateManagerId(id) {
         ])
         .then(function(res) {
           console.log("managerid", res.managerId);
-          const query = `SELECT id FROM employees WHERE first_name , ' ' , last_name = '${res.managerId}'`;
-          console.log("managerquery", res);
+          const query = `SELECT id FROM employees WHERE concat(employees.first_name, ' ' , last_name) = '${res.managerId}'`;
           connection.query(query, function(err, res) {
-            const query = `UPDATE employees SET manager_id = '${res.id}' WHERE employees.id = '${id}'`;
+            console.log("managerquery", res);
+            const query = `UPDATE employees SET manager_id = '${res[0].id}' WHERE employees.id = '${id}'`;
             connection.query(query, function(err, res) {
               console.log("updatemanager", res);
             });
