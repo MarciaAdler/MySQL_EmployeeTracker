@@ -1,5 +1,6 @@
 const inquirer = require("inquirer");
 const mysql = require("mysql");
+const cTable = require("console.table");
 
 var connection = mysql.createConnection({
   host: "localhost",
@@ -147,15 +148,24 @@ function updateManagerId(id) {
   );
 }
 function viewAllEmployees() {
+  allEmployees = [];
   connection.query(
     `SELECT employees.*, roles.title, roles.salary, roles.department_id FROM employees LEFT JOIN roles ON employees.role_id = roles.id`,
     function(err, res) {
-      console.log(res);
       for (let i = 0; i < res.length; i++) {
-        console.log(
-          `ID:${res[i].id} || First Name: ${res[i].first_name} || Last Name: ${res[i].last_name} || Manager ID: ${res[i].manager_id} || Title: ${res[i].title} ||Salary: ${res[i].salary} || Department ID: ${res[i].department_id}`
-        );
+        allEmployees.push({
+          id: res[i].id,
+          first_name: res[i].first_name,
+          last_name: res[i].last_name,
+          manager_id: res[i].manager_id,
+          title: res[i].title,
+          salary: res[i].salary,
+          department_id: res[i].department_id
+        });
+        console.table([allEmployees[i]]);
       }
+
+      //console.log(allEmployees);
     }
   );
 }
