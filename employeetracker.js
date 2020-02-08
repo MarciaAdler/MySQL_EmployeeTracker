@@ -24,6 +24,24 @@ connection.connect(function(err) {
 });
 
 function afterConnection() {
+  console.table([
+    `_/_/_/_/                            _/                                               
+       _/        _/_/_/  _/_/    _/_/_/    _/    _/_/    _/    _/    _/_/      _/_/          
+      _/_/_/    _/    _/    _/  _/    _/  _/  _/    _/  _/    _/  _/_/_/_/  _/_/_/_/         
+     _/        _/    _/    _/  _/    _/  _/  _/    _/  _/    _/  _/        _/                
+    _/_/_/_/  _/    _/    _/  _/_/_/    _/    _/_/      _/_/_/    _/_/_/    _/_/_/           
+                             _/                            _/                                
+                            _/                        _/_/                                   
+                                                                                             
+        _/      _/                                                                           
+       _/_/  _/_/    _/_/_/  _/_/_/      _/_/_/    _/_/_/    _/_/    _/  _/_/                
+      _/  _/  _/  _/    _/  _/    _/  _/    _/  _/    _/  _/_/_/_/  _/_/                     
+     _/      _/  _/    _/  _/    _/  _/    _/  _/    _/  _/        _/                        
+    _/      _/    _/_/_/  _/    _/    _/_/_/    _/_/_/    _/_/_/  _/                         
+                                                   _/                                        
+                                              _/_/                                           
+        `
+  ]);
   start();
 }
 
@@ -63,6 +81,8 @@ function start() {
         viewAllRoles();
       } else if (res.action === "Update Employee Roles") {
         updateEmployeeRoles();
+      } else if (res.action === "View Employees by Department") {
+        viewEmployeesbyDept();
       } else if (res.action === "Exit") {
         connection.end();
       }
@@ -168,7 +188,8 @@ function updateManagerId(id) {
 function viewAllEmployees() {
   allEmployees = [];
   connection.query(
-    `SELECT employees.*, roles.title, roles.salary, roles.department_id FROM employees LEFT JOIN roles ON employees.role_id = roles.id`,
+    `SELECT employees.*, roles.title, roles.salary, departments.name FROM ((roles INNER JOIN departments ON departments.id = roles.department_id) INNER JOIN employees ON roles.id = employees.role_id) 
+    `,
     function(err, res) {
       for (let i = 0; i < res.length; i++) {}
       console.table(res);
@@ -338,6 +359,41 @@ function updateRole(id) {
             start();
           });
         });
+      });
+  });
+}
+function viewEmployeesbyDept() {
+  let departments = [];
+  connection.query("SELECT name FROM departments", (err, res) => {
+    console.log(res);
+    for (let i = 0; i < res.length; i++) {
+      departments.push(res[i].name);
+    }
+
+    inquirer
+      .prompt([
+        {
+          type: "list",
+          name: "departmentName",
+          message: "What Department would you like to view all Employees?",
+          choices: departments
+        }
+      ])
+      .then(function(res) {
+        console.log(res.departmentName);
+        connection.query(
+          `SELECT id FROM departments WHERE name = '${res.departmentName}'`,
+          (err, res) => {
+            console.log(res[0].id);
+            connection.query(
+              `SELECT employees.*, roles.title, roles.salary, departments.name FROM ((roles INNER JOIN departments ON departments.id = roles.department_id) INNER JOIN employees ON roles.id = employees.role_id)  WHERE department_id = '${res[0].id}'`,
+              (err, res) => {
+                console.table(res);
+                start();
+              }
+            );
+          }
+        );
       });
   });
 }
