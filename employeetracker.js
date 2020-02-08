@@ -39,7 +39,7 @@ function start() {
           "View All Employees",
           "View Employees by Department",
           "Add Department",
-          "View Department",
+          "View all Departments",
           "Add Roles",
           "View Roles",
           "Update Employee Roles",
@@ -57,6 +57,8 @@ function start() {
         addDepartment();
       } else if (res.action === "Add Roles") {
         addRoles();
+      } else if (res.action === "View all Departments") {
+        viewAllDepartments();
       } else if (res.action === "Exit") {
         connection.end();
       }
@@ -172,7 +174,7 @@ function viewAllEmployees() {
         });
         console.table([allEmployees[i]]);
       }
-
+      start();
       //console.log(allEmployees);
     }
   );
@@ -254,9 +256,16 @@ function updateRoleDepartment(id) {
           const query = `UPDATE roles SET department_id = '${res[0].id}' WHERE roles.id = '${id}'`;
           connection.query(query, function(err, res) {
             if (err) throw err;
+
             start();
           });
         });
       });
+  });
+}
+function viewAllDepartments() {
+  connection.query(`SELECT * FROM departments`, (err, res) => {
+    console.table(res);
+    start();
   });
 }
