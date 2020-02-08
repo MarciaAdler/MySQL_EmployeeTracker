@@ -41,7 +41,7 @@ function start() {
           "Add Department",
           "View all Departments",
           "Add Roles",
-          "View Roles",
+          "View all Roles",
           "Update Employee Roles",
           "Remove Employee",
           "Exit"
@@ -59,6 +59,10 @@ function start() {
         addRoles();
       } else if (res.action === "View all Departments") {
         viewAllDepartments();
+      } else if (res.action === "View all Roles") {
+        viewAllRoles();
+      } else if (res.action === "Update Employee Roles") {
+        updateEmployeeRoles();
       } else if (res.action === "Exit") {
         connection.end();
       }
@@ -125,7 +129,7 @@ function updateRoleId(id) {
   });
 }
 function updateManagerId(id) {
-  let managerList = [];
+  let managerList = ["null"];
   connection.query(
     "SELECT employees.first_name, employees.last_name FROM employees INNER JOIN roles ON roles.id = employees.role_id WHERE roles.title = 'Manager'",
     (err, res) => {
@@ -144,15 +148,19 @@ function updateManagerId(id) {
         ])
         .then(function(res) {
           console.log("managerid", res.managerId);
-          const query = `SELECT id FROM employees WHERE concat(employees.first_name, ' ' , last_name) = '${res.managerId}'`;
-          connection.query(query, function(err, res) {
-            console.log("managerquery", res);
-            const query = `UPDATE employees SET manager_id = '${res[0].id}' WHERE employees.id = '${id}'`;
+          if (res.managerId !== "null") {
+            const query = `SELECT id FROM employees WHERE concat(employees.first_name, ' ' , last_name) = '${res.managerId}'`;
             connection.query(query, function(err, res) {
-              console.log("updatemanager", res);
-              start();
+              console.log("managerquery", res);
+              const query = `UPDATE employees SET manager_id = '${res[0].id}' WHERE employees.id = '${id}'`;
+              connection.query(query, function(err, res) {
+                console.log("updatemanager", res);
+                start();
+              });
             });
-          });
+          } else {
+            start();
+          }
         });
     }
   );
@@ -162,18 +170,8 @@ function viewAllEmployees() {
   connection.query(
     `SELECT employees.*, roles.title, roles.salary, roles.department_id FROM employees LEFT JOIN roles ON employees.role_id = roles.id`,
     function(err, res) {
-      for (let i = 0; i < res.length; i++) {
-        allEmployees.push({
-          id: res[i].id,
-          first_name: res[i].first_name,
-          last_name: res[i].last_name,
-          manager_id: res[i].manager_id,
-          title: res[i].title,
-          salary: res[i].salary,
-          department_id: res[i].department_id
-        });
-        console.table([allEmployees[i]]);
-      }
+      for (let i = 0; i < res.length; i++) {}
+      console.table(res);
       start();
       //console.log(allEmployees);
     }
@@ -267,5 +265,79 @@ function viewAllDepartments() {
   connection.query(`SELECT * FROM departments`, (err, res) => {
     console.table(res);
     start();
+  });
+}
+function viewAllRoles() {
+  connection.query(
+    `SELECT roles.*, departments.name FROM roles LEFT JOIN departments ON departments.id = roles.department_id
+    `,
+    (err, res) => {
+      console.table(res);
+      start();
+    }
+  );
+}
+function updateEmployeeRoles() {
+  employees = [];
+
+  connection.query(
+    `SELECT first_name, last_name FROM employees`,
+    (err, res) => {
+      // include a list of all employees to choose from
+      for (let i = 0; i < res.length; i++) {
+        let fullName = res[i].first_name + " " + res[i].last_name;
+        employees.push(fullName);
+      }
+      // prompt what employee user would like to update
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            name: "employeeNames",
+            message: "What employee would you like to update?",
+            choices: employees
+          }
+        ])
+        .then(function(res) {
+          connection.query(
+            `SELECT id FROM employees WHERE concat(employees.first_name, ' ' , last_name) = '${res.employeeNames}'`,
+            (err, res) => {
+              console.log(res);
+              updateRole(res);
+            }
+          );
+        });
+    }
+  );
+}
+function updateRole(id) {
+  roles = [];
+  connection.query(`SELECT title FROM roles`, (err, res) => {
+    for (let i = 0; i < res.length; i++) {
+      roles.push(res[i].title);
+    }
+    // once selected, ask user what the employee's new role is
+    inquirer
+      .prompt([
+        {
+          type: "list",
+          name: "roleTitles",
+          message: "What employee would you like to update?",
+          choices: roles
+        }
+      ])
+      .then(function(res) {
+        console.log(res);
+        // Update database
+        const query = `SELECT id FROM roles WHERE title = '${res.roleTitles}'`;
+        connection.query(query, function(err, res) {
+          console.log("employees.id", id[0].id);
+          const query = `UPDATE employees SET role_id = '${res[0].id}' WHERE employees.id = '${id[0].id}'`;
+          connection.query(query, function(err, res) {
+            if (err) throw err;
+            start();
+          });
+        });
+      });
   });
 }
