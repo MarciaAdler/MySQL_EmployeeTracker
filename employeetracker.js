@@ -19,7 +19,7 @@ var connection = mysql.createConnection({
 connection.connect(function(err) {
   if (err) throw err;
   console.log("connected as id " + connection.threadId);
-  //connection.end();
+
   afterConnection();
 });
 
@@ -43,7 +43,8 @@ function start() {
           "Add Roles",
           "View Roles",
           "Update Employee Roles",
-          "Remove Employee"
+          "Remove Employee",
+          "Exit"
         ]
       }
     ])
@@ -52,6 +53,12 @@ function start() {
         addEmployee();
       } else if (res.action === "View All Employees") {
         viewAllEmployees();
+      } else if (res.action === "Add Department") {
+        addDepartment();
+      } else if (res.action === "Add Roles") {
+        addRoles();
+      } else if (res.action === "Exit") {
+        connection.end();
       }
     });
 }
@@ -141,6 +148,7 @@ function updateManagerId(id) {
             const query = `UPDATE employees SET manager_id = '${res[0].id}' WHERE employees.id = '${id}'`;
             connection.query(query, function(err, res) {
               console.log("updatemanager", res);
+              start();
             });
           });
         });
@@ -168,4 +176,87 @@ function viewAllEmployees() {
       //console.log(allEmployees);
     }
   );
+}
+function addDepartment() {
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "departmentName",
+        message: "What is the name of the Department you would like to add?"
+      }
+    ])
+    .then(function(res) {
+      console.log(res);
+      const query = connection.query(
+        "INSERT INTO departments SET ?",
+        {
+          name: res.departmentName
+        },
+        (err, res) => {
+          console.log(res);
+          start();
+        }
+      );
+    });
+}
+function addRoles() {
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "title",
+        message: "What role would you like to add?"
+      },
+      {
+        type: "input",
+        name: "salary",
+        message: "What is the salary for the role?"
+      }
+    ])
+    .then(function(res) {
+      console.log(res);
+      const query = connection.query(
+        "INSERT INTO roles SET ?",
+        {
+          title: res.title,
+          salary: res.salary
+        },
+        (err, res) => {
+          console.log(res);
+          const id = res.insertId;
+          updateRoleDepartment(id);
+        }
+      );
+    });
+}
+function updateRoleDepartment(id) {
+  let departments = [];
+  connection.query("SELECT name FROM departments", (err, res) => {
+    console.log(res);
+    for (let i = 0; i < res.length; i++) {
+      departments.push(res[i].name);
+    }
+
+    inquirer
+      .prompt([
+        {
+          type: "list",
+          name: "departmentName",
+          message: "What department is the role in?",
+          choices: departments
+        }
+      ])
+      .then(function(res) {
+        const query = `SELECT id FROM departments WHERE name = '${res.departmentName}'`;
+
+        connection.query(query, function(err, res) {
+          const query = `UPDATE roles SET department_id = '${res[0].id}' WHERE roles.id = '${id}'`;
+          connection.query(query, function(err, res) {
+            if (err) throw err;
+            start();
+          });
+        });
+      });
+  });
 }
