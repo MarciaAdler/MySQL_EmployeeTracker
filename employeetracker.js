@@ -141,17 +141,15 @@ function updateManagerId(id) {
         ])
         .then(function(res) {
           console.log("managerid", res.managerId);
-          const query = `SELECT id FROM employees WHERE first_name + ' ' + last_name = '${res.managerId}'`;
+          const query = `SELECT id FROM employees WHERE first_name , ' ' , last_name = '${res.managerId}'`;
           console.log("managerquery", res);
           connection.query(query, function(err, res) {
-            console.log("res[0].id", res[0].id);
-            const query = `UPDATE employees SET manager_id = '${res[0].id}' WHERE employees.id = '${id}'`;
+            const query = `UPDATE employees SET manager_id = '${res.id}' WHERE employees.id = '${id}'`;
             connection.query(query, function(err, res) {
               console.log("updatemanager", res);
             });
           });
         });
-      start();
     }
   );
 }
