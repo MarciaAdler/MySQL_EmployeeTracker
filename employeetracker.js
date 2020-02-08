@@ -62,16 +62,6 @@ function start() {
     });
 }
 function addEmployee() {
-  const managerList = [];
-  connection.query(
-    "SELECT first_name, last_name FROM employees INNER JOIN roles ON employees.manager_id = roles.id WHERE title = 'Manager'",
-    (err, res) => {
-      for (let i = 0; i < res.length; i++) {
-        let fullName = res[i].first_name + " " + res[i].last_name;
-        managerList.push(fullName);
-      }
-    }
-  );
   inquirer
     .prompt([
       {
@@ -118,26 +108,57 @@ function updateRoleId(id) {
         }
       ])
       .then(function(res) {
-        console.log(res.roleId);
         const query = `SELECT id FROM roles WHERE title = '${res.roleId}'`;
 
         connection.query(query, function(err, res) {
           console.log(res[0].id);
           const query = `UPDATE employees SET role_id = '${res[0].id}' WHERE employees.id = '${id}'`;
           connection.query(query, function(err, res) {
-            console.log(res);
+            if (err) throw err;
           });
         });
+        updateManagerId(id);
       });
   });
 }
+function updateManagerId(id) {
+  let managerList = [];
+  connection.query(
+    "SELECT employees.first_name, employees.last_name FROM employees INNER JOIN roles ON roles.id = employees.role_id WHERE roles.title = 'Manager'",
+    (err, res) => {
+      console.log("managers", res);
+      for (let i = 0; i < res.length; i++) {
+        let fullName = res[i].first_name + " " + res[i].last_name;
+        managerList.push(fullName);
+        console.log("managerList", managerList);
+      }
 
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            name: "managerId",
+            message: "Who is the employee's manager?",
+            choices: managerList
+          }
+        ])
+        .then(function(res) {
+          console.log("managerid", res.managerId);
+          const query = `SELECT id FROM employees WHERE first_name + ' ' + last_name = '${res.managerId}'`;
+          console.log("managerquery", res);
+          connection.query(query, function(err, res) {
+            console.log("res[0].id", res[0].id);
+            const query = `UPDATE employees SET manager_id = '${res[0].id}' WHERE employees.id = '${id}'`;
+            connection.query(query, function(err, res) {
+              console.log("updatemanager", res);
+            });
+          });
+        });
+    }
+  );
+}
 //
-//     {
-//       type: "list",
-//       name: "manager",
-//       message: "Who is the employee's manager?",
-//       choices: managerList
+
 //     }.then(function(res) {
 //       console.log(res);
 //   const query = connection.query("INSERT INTO employees SET ?", {
