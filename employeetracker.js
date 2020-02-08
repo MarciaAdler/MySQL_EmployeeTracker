@@ -26,12 +26,6 @@ function afterConnection() {
   start();
 }
 
-//   connection.query("SELECT * FROM products", function(err, res) {
-//     if (err) throw err;
-//     console.log(res);
-//connection.end();
-//   });
-
 function start() {
   inquirer
     .prompt([
@@ -53,11 +47,10 @@ function start() {
       }
     ])
     .then(function(res) {
-      console.log(res.action);
       if (res.action === "Add Employee") {
         addEmployee();
-        //   } else if (res.action === "View All Employees") {
-        //     viewEmployees();
+      } else if (res.action === "View All Employees") {
+        viewAllEmployees();
       }
     });
 }
@@ -150,6 +143,19 @@ function updateManagerId(id) {
             });
           });
         });
+    }
+  );
+}
+function viewAllEmployees() {
+  connection.query(
+    `SELECT employees.*, roles.title, roles.salary, roles.department_id FROM employees LEFT JOIN roles ON employees.role_id = roles.id`,
+    function(err, res) {
+      console.log(res);
+      for (let i = 0; i < res.length; i++) {
+        console.log(
+          `ID:${res[i].id} || First Name: ${res[i].first_name} || Last Name: ${res[i].last_name} || Manager ID: ${res[i].manager_id} || Title: ${res[i].title} ||Salary: ${res[i].salary} || Department ID: ${res[i].department_id}`
+        );
+      }
     }
   );
 }
