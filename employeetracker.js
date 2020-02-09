@@ -62,6 +62,8 @@ function start() {
           "View all Roles",
           "Update Employee Roles",
           "Remove Employee",
+          "Delete Roles",
+          "Delete Departments",
           "Exit"
         ]
       }
@@ -83,6 +85,12 @@ function start() {
         updateEmployeeRoles();
       } else if (res.action === "View Employees by Department") {
         viewEmployeesbyDept();
+      } else if (res.action === "Remove Employee") {
+        removeEmployee();
+      } else if (res.action === "Delete Roles") {
+        deleteRoles();
+      } else if (res.action === "Delete Departments") {
+        deleteDepartment();
       } else if (res.action === "Exit") {
         connection.end();
       }
@@ -151,7 +159,7 @@ function updateRoleId(id) {
 function updateManagerId(id) {
   let managerList = ["null"];
   connection.query(
-    "SELECT employees.first_name, employees.last_name FROM employees INNER JOIN roles ON roles.id = employees.role_id WHERE roles.title = 'Manager'",
+    "SELECT employees.first_name, employees.last_name FROM employees",
     (err, res) => {
       for (let i = 0; i < res.length; i++) {
         let fullName = res[i].first_name + " " + res[i].last_name;
@@ -386,12 +394,107 @@ function viewEmployeesbyDept() {
           (err, res) => {
             console.log(res[0].id);
             connection.query(
-              `SELECT employees.*, roles.title, roles.salary, departments.name FROM ((roles INNER JOIN departments ON departments.id = roles.department_id) INNER JOIN employees ON roles.id = employees.role_id)  WHERE department_id = '${res[0].id}'`,
+              `SELECT employees.*, roles.title, roles.salary, departments.name FROM ((roles INNER JOIN departments ON departments.id = roles.department_id) INNER JOIN employees ON roles.id = employees.role_id) WHERE department_id = '${res[0].id}'`,
               (err, res) => {
                 console.table(res);
                 start();
               }
             );
+          }
+        );
+      });
+  });
+}
+function removeEmployee() {
+  let employeeList = [];
+  connection.query(
+    "SELECT employees.first_name, employees.last_name FROM employees",
+    (err, res) => {
+      for (let i = 0; i < res.length; i++) {
+        let fullName = res[i].first_name + " " + res[i].last_name;
+        employeeList.push(fullName);
+      }
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            name: "employee",
+            message: "What employee would you live to remove?",
+            choices: employeeList
+          }
+        ])
+        .then(function(res) {
+          console.log(res.employee);
+          connection.query(
+            `DELETE FROM employees WHERE concat(first_name, ' ' ,last_name) = '${res.employee}'`,
+            err => {
+              if (err) throw err;
+              connection.query("SELECT * FROM employees", (err, res) => {
+                console.table(res);
+                start();
+              });
+            }
+          );
+        });
+    }
+  );
+}
+function deleteRoles() {
+  let roles = [];
+  connection.query("SELECT title FROM roles", (err, res) => {
+    for (let i = 0; i < res.length; i++) {
+      roles.push(res[i].title);
+    }
+
+    inquirer
+      .prompt([
+        {
+          type: "list",
+          name: "role",
+          message: "What role would you like to delete?",
+          choices: roles
+        }
+      ])
+      .then(function(res) {
+        connection.query(
+          `DELETE FROM roles WHERE title = '${res.role}'`,
+          (err, res) => {
+            if (err) throw err;
+            connection.query("SELECT * from roles", (err, res) => {
+              console.table(res);
+              start();
+            });
+          }
+        );
+      });
+  });
+}
+function deleteDepartment() {
+  let departments = [];
+  connection.query("SELECT name FROM departments", (err, res) => {
+    console.log(res);
+    for (let i = 0; i < res.length; i++) {
+      departments.push(res[i].name);
+    }
+
+    inquirer
+      .prompt([
+        {
+          type: "list",
+          name: "departmentName",
+          message: "What Department would you like to delete?",
+          choices: departments
+        }
+      ])
+      .then(function(res) {
+        console.log(res.departmentName);
+        connection.query(
+          `DELETE FROM departments WHERE name = '${res.departmentName}'`,
+          (err, res) => {
+            connection.query(`SELECT * FROM departments`, (err, res) => {
+              console.table(res);
+              start();
+            });
           }
         );
       });
