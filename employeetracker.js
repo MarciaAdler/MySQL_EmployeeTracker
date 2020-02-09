@@ -1,6 +1,8 @@
 const inquirer = require("inquirer");
 const mysql = require("mysql");
 const cTable = require("console.table");
+const logo = require("asciiart-logo");
+const config = require("./package.json");
 
 var connection = mysql.createConnection({
   host: "localhost",
@@ -24,24 +26,7 @@ connection.connect(function(err) {
 });
 
 function afterConnection() {
-  console.table([
-    `_/_/_/_/                            _/                                               
-       _/        _/_/_/  _/_/    _/_/_/    _/    _/_/    _/    _/    _/_/      _/_/          
-      _/_/_/    _/    _/    _/  _/    _/  _/  _/    _/  _/    _/  _/_/_/_/  _/_/_/_/         
-     _/        _/    _/    _/  _/    _/  _/  _/    _/  _/    _/  _/        _/                
-    _/_/_/_/  _/    _/    _/  _/_/_/    _/    _/_/      _/_/_/    _/_/_/    _/_/_/           
-                             _/                            _/                                
-                            _/                        _/_/                                   
-                                                                                             
-        _/      _/                                                                           
-       _/_/  _/_/    _/_/_/  _/_/_/      _/_/_/    _/_/_/    _/_/    _/  _/_/                
-      _/  _/  _/  _/    _/  _/    _/  _/    _/  _/    _/  _/_/_/_/  _/_/                     
-     _/      _/  _/    _/  _/    _/  _/    _/  _/    _/  _/        _/                        
-    _/      _/    _/_/_/  _/    _/    _/_/_/    _/_/_/    _/_/_/  _/                         
-                                                   _/                                        
-                                              _/_/                                           
-        `
-  ]);
+  console.log(logo({ name: "EMPLOYEE TRACKER", font: "Puffy" }).render());
   start();
 }
 
