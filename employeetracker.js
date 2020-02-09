@@ -40,15 +40,16 @@ function start() {
         choices: [
           "Add Employee",
           "View All Employees",
-          "View Employees by Department",
-          "Add Department",
-          "View all Departments",
-          "Add Roles",
-          "View all Roles",
           "Update Employee Roles",
           "Remove Employee",
-          "Delete Roles",
-          "Delete Departments",
+          "Add Department",
+          "View all Departments",
+          "View Employees by Department",
+          "Delete Department",
+          "Add Roles",
+          "View all Roles",
+          "Update Employee Managers",
+          "Delete Role",
           "Exit"
         ]
       }
@@ -68,13 +69,15 @@ function start() {
         viewAllRoles();
       } else if (res.action === "Update Employee Roles") {
         updateEmployeeRoles();
+      } else if (res.action === "Update Employee Managers") {
+        updateEmployeeManager();
       } else if (res.action === "View Employees by Department") {
         viewEmployeesbyDept();
       } else if (res.action === "Remove Employee") {
         removeEmployee();
-      } else if (res.action === "Delete Roles") {
+      } else if (res.action === "Delete Role") {
         deleteRoles();
-      } else if (res.action === "Delete Departments") {
+      } else if (res.action === "Delete Department") {
         deleteDepartment();
       } else if (res.action === "Exit") {
         connection.end();
@@ -181,10 +184,9 @@ function updateManagerId(id) {
 function viewAllEmployees() {
   allEmployees = [];
   connection.query(
-    `SELECT employees.*, roles.title, roles.salary, departments.name FROM ((roles INNER JOIN departments ON departments.id = roles.department_id) INNER JOIN employees ON roles.id = employees.role_id) 
+    `SELECT employees.*, roles.title, roles.salary, departments.name AS dept_name FROM ((roles INNER JOIN departments ON departments.id = roles.department_id) RIGHT JOIN employees ON roles.id = employees.role_id) 
     `,
     function(err, res) {
-      for (let i = 0; i < res.length; i++) {}
       console.table(res);
       start();
       //console.log(allEmployees);
@@ -208,8 +210,10 @@ function addDepartment() {
           name: res.departmentName
         },
         (err, res) => {
-          console.log(res);
-          start();
+          connection.query(`SELECT * FROM departments`, (err, res) => {
+            console.table(res);
+            start();
+          });
         }
       );
     });
@@ -484,4 +488,84 @@ function deleteDepartment() {
         );
       });
   });
+}
+function updateEmployeeManager() {
+  employees = [];
+
+  connection.query(
+    `SELECT first_name, last_name FROM employees`,
+    (err, res) => {
+      // include a list of all employees to choose from
+      for (let i = 0; i < res.length; i++) {
+        let fullName = res[i].first_name + " " + res[i].last_name;
+        employees.push(fullName);
+      }
+      // prompt what employee user would like to update
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            name: "employeeNames",
+            message: "What employee would you like to update?",
+            choices: employees
+          }
+        ])
+        .then(function(res) {
+          connection.query(
+            `SELECT id FROM employees WHERE concat(employees.first_name, ' ' , last_name) = '${res.employeeNames}'`,
+            (err, res) => {
+              const id = res[0].id;
+              console.log(id);
+              updateManager(id);
+            }
+          );
+        });
+    }
+  );
+}
+function updateManager(id) {
+  let managerList = ["null"];
+  connection.query(
+    "SELECT employees.first_name, employees.last_name FROM employees",
+    (err, res) => {
+      for (let i = 0; i < res.length; i++) {
+        let fullName = res[i].first_name + " " + res[i].last_name;
+        managerList.push(fullName);
+      }
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            name: "managerId",
+            message: "Who is the employee's new manager?",
+            choices: managerList
+          }
+        ])
+        .then(function(res) {
+          console.log("managerid", res.managerId);
+          if (res.managerId !== "null") {
+            const query = `SELECT id FROM employees WHERE concat(employees.first_name, ' ' , last_name) = '${res.managerId}'`;
+            connection.query(query, function(err, res) {
+              console.log("managerquery", res);
+              const query = `UPDATE employees SET manager_id = '${res[0].id}' WHERE employees.id = '${id}'`;
+              connection.query(query, function(err, res) {
+                console.log(res);
+                connection.query("SELECT * from employees", (err, res) => {
+                  console.table(res);
+                  start();
+                });
+              });
+            });
+          } else {
+            connection.query(
+              `UPDATE employees SET manager_id = NULL WHERE employees.id = '${id}`,
+              (err, res) => {
+                if (err) throw err;
+                start();
+              }
+            );
+          }
+        });
+    }
+  );
 }
