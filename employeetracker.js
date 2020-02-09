@@ -251,7 +251,6 @@ function addRoles() {
 function updateRoleDepartment(id) {
   let departments = [];
   connection.query("SELECT name FROM departments", (err, res) => {
-    console.log(res);
     for (let i = 0; i < res.length; i++) {
       departments.push(res[i].name);
     }
@@ -272,8 +271,10 @@ function updateRoleDepartment(id) {
           const query = `UPDATE roles SET department_id = '${res[0].id}' WHERE roles.id = '${id}'`;
           connection.query(query, function(err, res) {
             if (err) throw err;
-
-            start();
+            connection.query(`Select * from roles`, (err, res) => {
+              console.table(res);
+              start();
+            });
           });
         });
       });
