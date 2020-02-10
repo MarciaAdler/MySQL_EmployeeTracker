@@ -184,8 +184,7 @@ function updateManagerId(id) {
 function viewAllEmployees() {
   allEmployees = [];
   connection.query(
-    `SELECT employees.*, roles.title, roles.salary, departments.name AS dept_name FROM ((roles INNER JOIN departments ON departments.id = roles.department_id) RIGHT JOIN employees ON roles.id = employees.role_id) 
-    `,
+    `SELECT employees.first_name, employees.last_name, roles.title, roles.salary, departments.name AS dept_name, concat(managers.first_name, " ", managers.last_name) AS Manager FROM roles INNER JOIN departments ON departments.id = roles.department_id RIGHT JOIN employees ON roles.id = employees.role_id LEFT JOIN employees managers ON employees.manager_id = managers.id`,
     function(err, res) {
       console.table(res);
       start();
@@ -297,7 +296,7 @@ function viewAllRoles() {
   );
 }
 function updateEmployeeRoles() {
-  employees = [];
+  let employees = [];
 
   connection.query(
     `SELECT first_name, last_name FROM employees`,
@@ -330,7 +329,7 @@ function updateEmployeeRoles() {
   );
 }
 function updateRole(id) {
-  roles = [];
+  let roles = [];
   connection.query(`SELECT title FROM roles`, (err, res) => {
     for (let i = 0; i < res.length; i++) {
       roles.push(res[i].title);
@@ -341,7 +340,7 @@ function updateRole(id) {
         {
           type: "list",
           name: "roleTitles",
-          message: "What employee would you like to update?",
+          message: "What would you like the employee's new role to be?",
           choices: roles
         }
       ])
@@ -384,7 +383,7 @@ function viewEmployeesbyDept() {
           (err, res) => {
             console.log(res[0].id);
             connection.query(
-              `SELECT employees.*, roles.title, roles.salary, departments.name FROM ((roles INNER JOIN departments ON departments.id = roles.department_id) INNER JOIN employees ON roles.id = employees.role_id) WHERE department_id = '${res[0].id}'`,
+              `SELECT employees.first_name, employees.last_name, roles.title, roles.salary, departments.name AS dept_name, concat(managers.first_name, " ", managers.last_name) AS Manager FROM roles INNER JOIN departments ON departments.id = roles.department_id RIGHT JOIN employees ON roles.id = employees.role_id LEFT JOIN employees managers ON employees.manager_id = managers.id WHERE department_id = '${res[0].id}'`,
               (err, res) => {
                 console.table(res);
                 start();
